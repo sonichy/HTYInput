@@ -95,19 +95,24 @@ bool MainWindow::eventFilter(QObject *obj, QEvent *event)
 
     if( obj == TE && event->type() == QEvent::KeyPress ){
         qDebug() << KE->text();
-        if( KE->key()>=Qt::Key_A && KE->key()<=Qt::Key_Z){
-            pywidget->move(pos().x(),pos().y()+100);
+        if( KE->key() >= Qt::Key_A && KE->key() <= Qt::Key_Z){
+            QTextCursor c = TE->textCursor();
+            pywidget->move(TE->viewport()->mapToGlobal(TE->cursorRect(c).bottomLeft()) + QPoint(0,5));
             pywidget->show();
         }
     }
     if( obj == pyedit && event->type() == QEvent::KeyPress )
     {
         qDebug() << KE->text();
-        if( KE->key()>=Qt::Key_0 && KE->key()<=Qt::Key_9 ){
-            if( (KE->key() - Qt::Key_0 +1) <= hx.size() ){
-                TE->insertPlainText(hx.at(KE->key()-Qt::Key_0));
-                pyedit->setText("");
-                pywidget->hide();
+        if( KE->key() >= Qt::Key_0 && KE->key() <= Qt::Key_9 ){
+            if( pyedit->text().lastIndexOf("'") != -1 ){
+                pyedit->setText(pyedit->text().replace(yj.at(0), hx.at(KE->key() - Qt::Key_0)));
+            }else{
+                if( (KE->key() - Qt::Key_0 ) < hx.size() ){
+                    TE->insertPlainText(hx.at(KE->key() - Qt::Key_0));
+                    pyedit->setText("");
+                    pywidget->hide();
+                }
             }
         }
         if( KE->key()==Qt::Key_Space ){
