@@ -8,6 +8,7 @@
 #include <QKeyEvent>
 #include <QApplication>
 #include <QRegExpValidator>
+#include <QString>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -21,11 +22,10 @@ MainWindow::MainWindow(QWidget *parent)
     pywidget->setWindowIcon(QIcon(":/icon.png"));
     QVBoxLayout *vbox = new QVBoxLayout;
     TE = new QTextEdit;
-    setCentralWidget(TE);
-    //vbox->addWidget(TE);
+    setCentralWidget(TE);    
     pyedit = new QLineEdit;
     QRegExp RE("[A-Za-z/']+$");
-    pyedit->setValidator(new QRegExpValidator(RE,this));
+    pyedit->setValidator(new QRegExpValidator(RE,pyedit));
     vbox->addWidget(pyedit);
     label_hx = new QLabel;
     vbox->addWidget(label_hx);
@@ -36,15 +36,15 @@ MainWindow::MainWindow(QWidget *parent)
     qApp->installEventFilter(this);
 
     QSqlDatabase database;
-    if(QSqlDatabase::contains("qt_sql_default_connection")){
+    if (QSqlDatabase::contains("qt_sql_default_connection")) {
         database = QSqlDatabase::database("qt_sql_default_connection");
-    }else{
+    } else {
         database = QSqlDatabase::addDatabase("QSQLITE");
         database.setDatabaseName("pyck.db");
     }
     if (!database.open()){
         qDebug() << "Error: Failed to connect database." << database.lastError();
-    }else{
+    } else {
 
     }
 
@@ -57,34 +57,36 @@ MainWindow::~MainWindow()
 
 void MainWindow::search(QString py)
 {
-    if(py==""){
+    if (py == "") {
         label_hx->setText("");
-    }else{
+    } else {
         QSqlQuery query;
         yj.clear();
         yj = py.split("'");
         QString where = " where";
-        for(int i=0;i<yj.size();i++){
-            if(yj.at(i)!=""){
+        for (int i=0; i<yj.size(); i++) {
+            if (yj.at(i) != "" && !yj.at(i).contains(QRegExp("[\\x4e00-\\x9fa5]+"))) {
                 where += " py like '" + yj.at(i) + "%'";
-                if(i<yj.size()-1)where += " or";
+                if (i < yj.size()-1) where += " or";
             }
         }
-        QString sql = "select hz from pyhz" + where;
-        qDebug() << sql;
-        if(!query.exec(sql)){
-            qDebug() << query.lastError();
-        }else{            
-            hx.clear();
-            while(query.next()){
-                QString hz = query.value(0).toString();
-                hx.append(hz);              
+        if (where != " where") {
+            QString sql = "select hz from pyhz" + where;
+            qDebug() << sql;
+            if (!query.exec(sql)) {
+                qDebug() << query.lastError();
+            } else {
+                hx.clear();
+                while (query.next()) {
+                    QString hz = query.value(0).toString();
+                    hx.append(hz);
+                }
+                QString shx="";
+                for (int i=0; i<hx.size(); i++) {
+                    shx += " " + QString::number(i) + "." + hx.at(i) + " ";
+                }
+                label_hx->setText(shx);
             }
-            QString shx="";
-            for(int i=0;i<hx.size();i++){
-                shx += " " + QString::number(i) + "." + hx.at(i) + " ";
-            }
-            label_hx->setText(shx);
         }
     }
 }
@@ -94,46 +96,63 @@ bool MainWindow::eventFilter(QObject *obj, QEvent *event)
     QKeyEvent *KE = static_cast<QKeyEvent*>(event);
 
     if( obj == TE && event->type() == QEvent::KeyPress ){
-        qDebug() << KE->text();
+        qDebug() << "TextEdit" << KE->text();
         if( KE->key() >= Qt::Key_A && KE->key() <= Qt::Key_Z){
             QTextCursor c = TE->textCursor();
             pywidget->move(TE->viewport()->mapToGlobal(TE->cursorRect(c).bottomLeft()) + QPoint(0,5));
             pywidget->show();
+            pyedit->setText(KE->text());
+            return true;
         }
     }
-    if( obj == pyedit && event->type() == QEvent::KeyPress )
-    {
-        qDebug() << KE->text();
-        if( KE->key() >= Qt::Key_0 && KE->key() <= Qt::Key_9 ){
-            if( pyedit->text().lastIndexOf("'") != -1 ){
-                pyedit->setText(pyedit->text().replace(yj.at(0), hx.at(KE->key() - Qt::Key_0)));
-            }else{
-                if( (KE->key() - Qt::Key_0 ) < hx.size() ){
+
+    if (obj == pyedit && event->type() == QEvent::KeyPress) {
+        qDebug() << "LineEdit" << KE->text();
+        int yjc = 0;
+        for (int i=0; i<yj.size(); i++) {
+            if (!yj.at(i).contains(QRegExp("[\\x4e00-\\x9fa5]+"))) { // 不含中文
+                yjc = i;
+                break;
+            }
+        }
+
+        if (KE->key() >= Qt::Key_0 && KE->key() <= Qt::Key_9) {
+            qDebug() << "选" << KE->key() - Qt::Key_0 << "候选个数" << hx.size();
+            if (pyedit->text().lastIndexOf("'") != -1 ) {
+                pyedit->setText(pyedit->text().replace(yj.at(yjc), hx.at(KE->key() - Qt::Key_0)));
+            } else {
+                if ((KE->key() - Qt::Key_0 ) < hx.size()) {
                     TE->insertPlainText(hx.at(KE->key() - Qt::Key_0));
                     pyedit->setText("");
                     pywidget->hide();
                 }
             }
+            return false;
         }
-        if( KE->key()==Qt::Key_Space ){
-            if( hx.size() >0 ){
-                TE->insertPlainText(hx.at(0));
+
+        if (KE->key() == Qt::Key_Space) {
+            if( hx.size() == 0 ){
+                TE->insertPlainText(pyedit->text());
                 pyedit->setText("");
                 pywidget->hide();
             }
         }
-        if( KE->key()<Qt::Key_A && KE->key()>Qt::Key_Z){
+
+        if (KE->key() < Qt::Key_A && KE->key() > Qt::Key_Z) {
             TE->insertPlainText(KE->text());
         }
-        if( KE->key() == Qt::Key_Return && KE->key() == Qt::Key_Enter){
+
+        if (KE->key() == Qt::Key_Return || KE->key() == Qt::Key_Enter) {
             TE->insertPlainText(pyedit->text());
             pyedit->setText("");
             pywidget->hide();
         }
-        if( KE->key()==Qt::Key_Escape ){
+
+        if (KE->key() == Qt::Key_Escape) {
             pyedit->setText("");
             pywidget->hide();
         }
     }
+
     return QObject::eventFilter(obj, event);
 }
