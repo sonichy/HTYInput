@@ -13,7 +13,7 @@ https://github.com/xiaoyanLG/ChineseInput
 ```
 eventFilter(QObject *obj, QEvent *event) {  
 	QKeyEvent *KE = static_cast<QKeyEvent*>(event);  
-	if ( obj == TE && event->type() == QEvent::KeyPress ) {  
+	if (obj == TE && event->type() == QEvent::KeyPress) {  
 		if (KE->key() >= Qt::Key_A && KE->key() <= Qt::Key_Z) {  
 			...
 		}
