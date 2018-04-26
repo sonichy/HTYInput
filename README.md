@@ -16,6 +16,7 @@ eventFilter(QObject *obj, QEvent *event) {
 	if ( obj == TE && event->type() == QEvent::KeyPress ) {  
 		if (KE->key() >= Qt::Key_A && KE->key() <= Qt::Key_Z) {  
 			...
+		}
 	}  
 }
 ```
