@@ -25,3 +25,5 @@ eventFilter(QObject *obj, QEvent *event) {
 #### 音节自动分割
 输入 ```pinyinshurufa``` ，显示 ```pin'yin'shu'ru'fa``` 。
 #### 按音节选字
+#### Linux系统事件监听
+https://www.jianshu.com/p/80cf81413d31
