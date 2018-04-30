@@ -23,10 +23,13 @@ private:
     QLabel *label_hx;
     QStringList hx,yj;
     QTextEdit *TE;
+    bool isPinYin;
+    int page;
 
 private slots:
     void search(QString);
     //void choosed(int);
+    void switchPinYin();
 };
 
 #endif // MAINWINDOW_H
