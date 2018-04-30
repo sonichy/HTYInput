@@ -20,7 +20,7 @@ eventFilter(QObject *obj, QEvent *event) {
 }
 ```
 ### 拼音基础：
-声母、韵母  
+声母、韵母组合  
 ![alt](shengyun.jpg)
 #### 音节自动分割
 输入 ```pinyinshurufa``` ，显示 ```pin'yin'shu'ru'fa``` 。

@@ -40,7 +40,7 @@ MainWindow::MainWindow(QWidget *parent)
         database = QSqlDatabase::database("qt_sql_default_connection");
     } else {
         database = QSqlDatabase::addDatabase("QSQLITE");
-        database.setDatabaseName("pyck.db");
+        database.setDatabaseName("chinese.db");
     }
     if (!database.open()){
         qDebug() << "Error: Failed to connect database." << database.lastError();
@@ -66,12 +66,13 @@ void MainWindow::search(QString py)
         QString where = " where";
         for (int i=0; i<yj.size(); i++) {
             if (yj.at(i) != "" && !yj.at(i).contains(QRegExp("[\\x4e00-\\x9fa5]+"))) {
-                where += " py like '" + yj.at(i) + "%'";
+                //where += " pinyin like '" + yj.at(i) + "%'";
+                where += " pinyin='" + yj.at(i) + "'";
                 if (i < yj.size()-1) where += " or";
             }
         }
         if (where != " where") {
-            QString sql = "select hz from pyhz" + where;
+            QString sql = "select chinese from singlePinyin" + where;
             qDebug() << sql;
             if (!query.exec(sql)) {
                 qDebug() << query.lastError();
@@ -79,7 +80,8 @@ void MainWindow::search(QString py)
                 hx.clear();
                 while (query.next()) {
                     QString hz = query.value(0).toString();
-                    hx.append(hz);
+                    //hx.append(hz);
+                    hx = hz.split(" ",QString::SkipEmptyParts);
                 }
                 QString shx="";
                 for (int i=0; i<hx.size(); i++) {
